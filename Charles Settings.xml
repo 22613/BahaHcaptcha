@@ -16,13 +16,6 @@
       <locationPatterns>
         <locationMatch>
           <location>
-            <host>*.acplay.net</host>
-            <port>443</port>
-          </location>
-          <enabled>true</enabled>
-        </locationMatch>
-        <locationMatch>
-          <location>
             <host>*.bilibili.com</host>
             <port>443</port>
           </location>
@@ -89,17 +82,7 @@
           <mappings>
             <mapMapping>
               <sourceLocation>
-                <host>api.acplay.net</host>
-              </sourceLocation>
-              <destLocation>
                 <protocol>https</protocol>
-                <host>api.dandanplay.net</host>
-              </destLocation>
-              <preserveHostHeader>false</preserveHostHeader>
-              <enabled>true</enabled>
-            </mapMapping>
-            <mapMapping>
-              <sourceLocation>
                 <host>ani.gamer.com.tw</host>
               </sourceLocation>
               <destLocation>
