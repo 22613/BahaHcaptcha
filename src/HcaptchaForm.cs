@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Net;
@@ -138,31 +139,31 @@ namespace BahaHcaptcha {
         }
 
         private void CoreWebView2_WebResourceResponseReceived(object sender, CoreWebView2WebResourceResponseReceivedEventArgs e) {
-            if(GetValue("cookie", "cf_clearance") is { Length: > 0 } cookie) {
+            if(GetValue(e.Request.Headers, "cookie", "cf_clearance") is { Length: > 0 } cookie) {
                 _cookie = cookie;
-                Debug.WriteLine($"Request Clearance Cookie: {_cookie}");
+                Debug.WriteLine($"cookie: {_cookie}");
             }
 
-            if(GetValue("set-cookie", "cf_clearance") is { Length: > 0 } setcookie) {
+            if(GetValue(e.Response.Headers, "set-cookie", "cf_clearance") is { Length: > 0 } setcookie) {
                 _cookie = setcookie;
-                Debug.WriteLine($"Response Clearance Cookie: {_cookie}");
+                Debug.WriteLine($"set-cookie: {_cookie}");
             }
+        }
 
-            string GetValue(string headerName, string key) {
-                foreach(var header in e.Response.Headers) {
-                    if(header.Key == headerName) {
-                        foreach(var value in header.Value.Split(';')) {
-                            var separator = value.IndexOf('=');
-                            if(separator > 0) {
-                                if(value.Remove(separator).Trim() == key) {
-                                    return value.Trim();
-                                }
+        private static string GetValue(IEnumerable<KeyValuePair<string, string>> headers, string headerName, string key) {
+            foreach(var header in headers) {
+                if(header.Key == headerName) {
+                    foreach(var value in header.Value.Split(';')) {
+                        var separator = value.IndexOf('=');
+                        if(separator > 0) {
+                            if(value.Remove(separator).Trim() == key) {
+                                return value.Trim();
                             }
                         }
                     }
                 }
-                return string.Empty;
             }
+            return string.Empty;
         }
 
         private void Form_FormClosing(object sender, FormClosingEventArgs e) {
