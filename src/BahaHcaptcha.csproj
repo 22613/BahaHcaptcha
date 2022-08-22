@@ -5,12 +5,15 @@
     <LangVersion>preview</LangVersion>
     <PlatformTarget>AnyCPU</PlatformTarget>
     <UseWindowsForms>true</UseWindowsForms>
-    <TargetFramework>net472</TargetFramework>
+    <TargetFrameworks>net472;net6.0-windows</TargetFrameworks>
     <ApplicationIcon>favicon.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>
     <Content Include="favicon.ico" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'net472'">
   </ItemGroup>
 
   <ItemGroup>
