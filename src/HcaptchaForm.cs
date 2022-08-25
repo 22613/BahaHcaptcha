@@ -33,6 +33,10 @@ namespace BahaHcaptcha {
             _configuration = configuration;
             _httpClientFactory = httpClientFactory;
 
+            var workHeight = Screen.PrimaryScreen.WorkingArea.Height;
+            if(workHeight < Height) {
+                Height = workHeight;
+            }
             Icon = System.Drawing.Icon.ExtractAssociatedIcon(Application.ExecutablePath);
             notifyIcon.Icon = Icon;
             webView.NavigationStarting += WebView_NavigationStarting;
