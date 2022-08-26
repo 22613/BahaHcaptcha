@@ -27,13 +27,14 @@
             this.label1 = new System.Windows.Forms.Label();
             this.label2 = new System.Windows.Forms.Label();
             this.listenPort = new System.Windows.Forms.NumericUpDown();
+            this.clearCookie = new System.Windows.Forms.CheckBox();
             ((System.ComponentModel.ISupportInitialize)(this.listenPort)).BeginInit();
             this.SuspendLayout();
             // 
             // proxyBar
             // 
             this.proxyBar.Location = new System.Drawing.Point(16, 102);
-            this.proxyBar.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.proxyBar.Margin = new System.Windows.Forms.Padding(4);
             this.proxyBar.Name = "proxyBar";
             this.proxyBar.Size = new System.Drawing.Size(228, 23);
             this.proxyBar.TabIndex = 0;
@@ -61,7 +62,7 @@
             // listenPort
             // 
             this.listenPort.Location = new System.Drawing.Point(16, 34);
-            this.listenPort.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.listenPort.Margin = new System.Windows.Forms.Padding(4);
             this.listenPort.Maximum = new decimal(new int[] {
             65535,
             0,
@@ -81,18 +82,29 @@
             0,
             0});
             // 
+            // clearCookie
+            // 
+            this.clearCookie.AutoSize = true;
+            this.clearCookie.Location = new System.Drawing.Point(18, 148);
+            this.clearCookie.Name = "clearCookie";
+            this.clearCookie.Size = new System.Drawing.Size(202, 21);
+            this.clearCookie.TabIndex = 5;
+            this.clearCookie.Text = "启动时清理超过12小时的Cookie";
+            this.clearCookie.UseVisualStyleBackColor = true;
+            // 
             // ConfigForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 17F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(273, 147);
+            this.ClientSize = new System.Drawing.Size(273, 196);
+            this.Controls.Add(this.clearCookie);
             this.Controls.Add(this.listenPort);
             this.Controls.Add(this.label2);
             this.Controls.Add(this.label1);
             this.Controls.Add(this.proxyBar);
             this.Font = new System.Drawing.Font("Microsoft YaHei UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
-            this.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.Margin = new System.Windows.Forms.Padding(4);
             this.MaximizeBox = false;
             this.MinimizeBox = false;
             this.Name = "ConfigForm";
@@ -113,5 +125,6 @@
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.Label label2;
         private System.Windows.Forms.NumericUpDown listenPort;
+        private System.Windows.Forms.CheckBox clearCookie;
     }
 }

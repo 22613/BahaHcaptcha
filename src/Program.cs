@@ -39,7 +39,7 @@ namespace BahaHcaptcha {
             var host = Host.CreateDefaultBuilder(
                     args
                 ).ConfigureAppConfiguration(builder => {
-                    builder.AddYamlFile(ConfigForm.ConfigPath, true);
+                    builder.AddYamlFile(Config.ConfigPath, true);
                 }).ConfigureServices(services => {
                     services.AddHttpClient("baha")
                         .SetHandlerLifetime(TimeSpan.FromMinutes(10))
@@ -48,16 +48,22 @@ namespace BahaHcaptcha {
                                 AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate,
                                 UseCookies = false,
                             };
-                            var configuration = provider.GetRequiredService<IConfiguration>();
-                            if(configuration[ConfigForm.Keys.Proxy] is { Length: > 0 } proxy) {
+                            var config = provider.GetRequiredService<Config>();
+                            if(config.ExternalProxy is { Length: > 0 } proxy) {
                                 result.Proxy = new WebProxy(proxy) {
                                     BypassProxyOnLocal = false
                                 };
-                            }
+                            } else
+                                result.Proxy = null;
                             return result;
                         });
-                    services.AddScoped<HcaptchaForm>();
-                    services.AddScoped<ConfigForm>();
+                    services.AddSingleton<HcaptchaForm>();
+                    services.AddSingleton<ConfigForm>();
+                    services.AddSingleton(provider => {
+                        Config config = new();
+                        provider.GetRequiredService<IConfiguration>().Bind(config);
+                        return config;
+                    });
                 }).Build();
             host.StartAsync().Wait();
 

@@ -2,9 +2,11 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
@@ -23,14 +25,14 @@ namespace BahaHcaptcha {
 
         private readonly HttpListener _httpListener = new();
         private readonly IServiceProvider _provider;
-        private readonly IConfiguration _configuration;
+        private readonly Config _config;
         private readonly IHttpClientFactory _httpClientFactory;
 
-        public HcaptchaForm(IServiceProvider provider, IConfiguration configuration, IHttpClientFactory httpClientFactory) {
+        public HcaptchaForm(IServiceProvider provider, IHttpClientFactory httpClientFactory, Config config) {
             InitializeComponent();
 
+            _config = config;
             _provider = provider;
-            _configuration = configuration;
             _httpClientFactory = httpClientFactory;
 
             var workHeight = Screen.PrimaryScreen.WorkingArea.Height;
@@ -41,7 +43,8 @@ namespace BahaHcaptcha {
             notifyIcon.Icon = Icon;
             webView.NavigationStarting += WebView_NavigationStarting;
             webView.NavigationCompleted += WebView_NavigationCompleted;
-            if(_configuration[ConfigForm.Keys.Listen] is not { Length: > 0 } port) port = "5100";
+
+            if(config.ListenPort is not { Length: > 0 } port) port = "5100";
             InitializeHttpListener($"http://localhost:{port}/");
             InitializeWebView2Async();
         }
@@ -54,7 +57,7 @@ namespace BahaHcaptcha {
             }
             return Task.Run(async () => {
                 while(true) {
-                    var context = await _httpListener.GetContextAsync();
+                    var context = await _httpListener.GetContextAsync().ConfigureAwait(false);
                     try {
                         var request = context.Request;
                         using var response = context.Response;
@@ -74,13 +77,13 @@ namespace BahaHcaptcha {
                                 message.Method = HttpMethod.Post;
                                 var data = new StringBuilder();
                                 using var input = new StreamReader(request.InputStream);
-                                while(await input.ReadLineAsync() is { } line) {
+                                while(await input.ReadLineAsync().ConfigureAwait(false) is { } line) {
                                     data.AppendLine(line);
                                 }
                                 message.Content = new StringContent(data.ToString(), Encoding.UTF8, "application/x-www-form-urlencoded");
                             }
                             using var client = _httpClientFactory.CreateClient("baha");
-                            using var resp = await client.SendAsync(message, HttpCompletionOption.ResponseHeadersRead);
+                            using var resp = await client.SendAsync(message, HttpCompletionOption.ResponseHeadersRead).ConfigureAwait(false);
                             if(resp.IsSuccessStatusCode) {
                                 foreach(var v in resp.Headers) {
                                     response.AddHeader(v.Key, string.Join(";", v.Value));
@@ -88,7 +91,7 @@ namespace BahaHcaptcha {
                                 foreach(var v in resp.Content.Headers) {
                                     response.AddHeader(v.Key, string.Join(";", v.Value));
                                 }
-                                await resp.Content.CopyToAsync(response.OutputStream);
+                                await resp.Content.CopyToAsync(response.OutputStream).ConfigureAwait(false);
                             } else {
                                 Invoke(() => {
                                     _isHcaptcha = true;
@@ -125,16 +128,30 @@ namespace BahaHcaptcha {
 
         private async void InitializeWebView2Async() {
             var options = new CoreWebView2EnvironmentOptions();
-            if(_configuration[ConfigForm.Keys.Proxy] is { Length: > 0 } proxy) {
+            if(_config.ExternalProxy is { Length: > 0 } proxy) {
                 options.AdditionalBrowserArguments = $"--proxy-server={proxy}";
             }
-            var env = await CoreWebView2Environment.CreateAsync(null, null, options);
-            await webView.EnsureCoreWebView2Async(env);
+            var env = await CoreWebView2Environment.CreateAsync(null, null, options).ConfigureAwait(false);
+            await webView.EnsureCoreWebView2Async(env).ConfigureAwait(true);
 
             webView.CoreWebView2.DocumentTitleChanged += CoreWebView2_DocumentTitleChanged;
             webView.CoreWebView2.WebResourceResponseReceived += CoreWebView2_WebResourceResponseReceived;
             _useragent = webView.CoreWebView2.Settings.UserAgent;
 
+            var cookies = await webView.CoreWebView2.CookieManager.GetCookiesAsync(_bahaHost).ConfigureAwait(true);
+            foreach(var cookie in cookies) {
+                if(cookie.Name == "cf_clearance") {
+                    var match = Regex.Match(cookie.Value, @"-(\d{10})-\d-");
+                    if(match.Success) {
+                        if(long.TryParse(match.Groups[1].Value, out var seconds)) {
+                            var dto = DateTimeOffset.FromUnixTimeSeconds(seconds).ToLocalTime();
+                            if(DateTimeOffset.Now - dto > TimeSpan.FromHours(12)) {
+                                webView.CoreWebView2.CookieManager.DeleteCookie(cookie);
+                            }
+                        }
+                    }
+                }
+            }
             webView.CoreWebView2.Navigate($"{_bahaHost}/");
         }
 
