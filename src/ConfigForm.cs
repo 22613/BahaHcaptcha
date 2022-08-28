@@ -1,8 +1,8 @@
 ﻿using System;
 using System.IO;
+using System.Linq;
 using System.Windows.Forms;
 
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace BahaHcaptcha;
@@ -19,27 +19,30 @@ public partial class ConfigForm: Form {
         _config = config;
         _provider = provider;
 
-        proxyBar.Text = config.ExternalProxy;
-        if(ushort.TryParse(config.ListenPort, out var port))
+        proxyBar.Text = _config.ExternalProxy;
+        if(ushort.TryParse(_config.ListenPort, out var port))
             listenPort.Value = port;
-        clearCookie.Checked = config.ClearCookie;
+        clearCookie.Checked = _config.ClearCookie;
+        if(_config.BahaSearchReplaces is not null)
+            bahaSearchReplaceBar.Lines = _config.BahaSearchReplaces.ToArray();
+        if(_config.BilibiliSearchReplaces is not null)
+            bilibiliSearchReplaceBar.Lines = _config.BilibiliSearchReplaces.ToArray();
     }
 
     private void Form_FormClosing(object sender, FormClosingEventArgs e) {
         if(_canExitApp) return;
 
         var proxy = proxyBar.Text ?? string.Empty;
-        //var old_proxy = _configuration[Keys.Proxy] ?? string.Empty;
-
         var port = listenPort.Value.ToString();
-        //if(!ushort.TryParse(_configuration[Keys.Listen], out var old_port))
-        //    old_port = 5100;
-
         var clear = clearCookie.Checked;
+        var bahaSearchReplaces = bahaSearchReplaceBar.Lines;
+        var bilibiliSearchReplaces = bilibiliSearchReplaceBar.Lines;
 
-        if(_config.ExternalProxy != proxy
-            || _config.ListenPort != port
+        if((_config.ExternalProxy ?? string.Empty) != proxy
+            || (_config.ListenPort ?? "5100") != port
             || _config.ClearCookie != clear
+            || !(_config.BahaSearchReplaces ?? Array.Empty<string>()).SequenceEqual(bahaSearchReplaces)
+            || !(_config.BilibiliSearchReplaces ?? Array.Empty<string>()).SequenceEqual(bilibiliSearchReplaces)
         ) {
             using(var sw = new StreamWriter(Config.ConfigPath)) {
                 var serializer = new YamlDotNet.Serialization.Serializer();
@@ -47,6 +50,8 @@ public partial class ConfigForm: Form {
                     ListenPort = port,
                     ClearCookie = clear,
                     ExternalProxy = proxy,
+                    BahaSearchReplaces = bahaSearchReplaces,
+                    BilibiliSearchReplaces = bilibiliSearchReplaces,
                 });
             }
 

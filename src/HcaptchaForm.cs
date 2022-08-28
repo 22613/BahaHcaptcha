@@ -10,13 +10,16 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Web.WebView2.Core;
 
 namespace BahaHcaptcha {
     public partial class HcaptchaForm: Form {
         private const string _bahaHost = "https://ani.gamer.com.tw";
+        private const string _bahaSearchUrl = "/search.php?kw=";
+
+        private const string _dandanCasHost = "https://cas.dandanplay.net";
+        private const string _biliSearchUrl = "/api/bilibili/search?keyword=";
 
         private string _cookie;
         private string _useragent;
@@ -35,10 +38,6 @@ namespace BahaHcaptcha {
             _provider = provider;
             _httpClientFactory = httpClientFactory;
 
-            var workHeight = Screen.PrimaryScreen.WorkingArea.Height;
-            if(workHeight < Height) {
-                Height = workHeight;
-            }
             Icon = System.Drawing.Icon.ExtractAssociatedIcon(Application.ExecutablePath);
             notifyIcon.Icon = Icon;
             webView.NavigationStarting += WebView_NavigationStarting;
@@ -58,58 +57,84 @@ namespace BahaHcaptcha {
             return Task.Run(async () => {
                 while(true) {
                     var context = await _httpListener.GetContextAsync().ConfigureAwait(false);
-                    try {
-                        var request = context.Request;
-                        using var response = context.Response;
-                        if(request.HttpMethod is "GET" or "POST") {
-                            using var message = new HttpRequestMessage {
-                                RequestUri = new Uri($"{_bahaHost}{request.RawUrl}"),
-                                Headers = {
-                                    { "User-Agent", _useragent },
-                                    { "Accept", "*/*" },
-                                    { "Cookie", _cookie },
-                                },
-                            };
-
-                            if(request.HttpMethod is "GET") {
-                                message.Method = HttpMethod.Get;
-                            } else {
-                                message.Method = HttpMethod.Post;
-                                var data = new StringBuilder();
-                                using var input = new StreamReader(request.InputStream);
-                                while(await input.ReadLineAsync().ConfigureAwait(false) is { } line) {
-                                    data.AppendLine(line);
-                                }
-                                message.Content = new StringContent(data.ToString(), Encoding.UTF8, "application/x-www-form-urlencoded");
-                            }
-                            using var client = _httpClientFactory.CreateClient("baha");
-                            using var resp = await client.SendAsync(message, HttpCompletionOption.ResponseHeadersRead).ConfigureAwait(false);
-                            if(resp.IsSuccessStatusCode) {
-                                foreach(var v in resp.Headers) {
-                                    response.AddHeader(v.Key, string.Join(";", v.Value));
-                                }
-                                foreach(var v in resp.Content.Headers) {
-                                    response.AddHeader(v.Key, string.Join(";", v.Value));
-                                }
-                                await resp.Content.CopyToAsync(response.OutputStream).ConfigureAwait(false);
-                            } else {
-                                Invoke(() => {
-                                    _isHcaptcha = true;
-                                    webView.CoreWebView2.Navigate(_bahaHost);
-                                    ShowActivate();
-                                });
-                                response.StatusCode = (int)resp.StatusCode;
-                                response.Close(Array.Empty<byte>(), true);
-                            }
-                        } else {
-                            response.StatusCode = 400;
-                            response.Close(Array.Empty<byte>(), true);
-                        }
-                    } catch(Exception) {
-
-                    }
+                    _ = ContextHandler(context).ConfigureAwait(false);
                 }
             });
+
+            static string Replace(string value, IEnumerable<string> replaces) {
+                if(replaces is null || !replaces.Any()) return value;
+                var sb = new StringBuilder(value);
+                foreach(var r in replaces) {
+                    var i = r.IndexOf('=');
+                    if(i > 0) {
+                        sb.Replace(r.Substring(0, i), r.Substring(i + 1));
+                    }
+                }
+                return sb.ToString();
+            }
+
+            async Task ContextHandler(HttpListenerContext context) {
+                try {
+                    var request = context.Request;
+                    using var response = context.Response;
+                    if(request.HttpMethod is "GET" or "POST") {
+                        using var message = new HttpRequestMessage {
+                            Headers = {
+                                { "User-Agent", _useragent },
+                                { "Accept", "*/*" },
+                                { "Cookie", _cookie },
+                            },
+                        };
+
+                        if(request.HttpMethod is "GET") {
+                            message.Method = HttpMethod.Get;
+                            if(request.RawUrl.StartsWith(_bahaSearchUrl)) {
+                                message.RequestUri = new Uri($"{_bahaHost}{_bahaSearchUrl}{Replace(request.QueryString["kw"], _config.BahaSearchReplaces)}");
+                            } else if(request.RawUrl.StartsWith(_biliSearchUrl)) {
+                                message.RequestUri = new Uri($"{_dandanCasHost}{_biliSearchUrl}{Replace(request.QueryString["keyword"], _config.BilibiliSearchReplaces)}");
+                            } else {
+                                message.RequestUri = new Uri($"{_bahaHost}{request.RawUrl}");
+                            }
+                        } else {
+                            message.RequestUri = new Uri($"{_bahaHost}{request.RawUrl}");
+                            message.Method = HttpMethod.Post;
+                            var data = new StringBuilder();
+                            using var input = new StreamReader(request.InputStream);
+                            while(await input.ReadLineAsync().ConfigureAwait(false) is { } line) {
+                                data.AppendLine(line);
+                            }
+                            message.Content = new StringContent(data.ToString(), Encoding.UTF8, "application/x-www-form-urlencoded");
+                        }
+                        using var client = _httpClientFactory.CreateClient("baha");
+                        using var resp = await client.SendAsync(message, HttpCompletionOption.ResponseHeadersRead).ConfigureAwait(false);
+                        if(resp.IsSuccessStatusCode) {
+                            response.StatusCode = (int)resp.StatusCode;
+                            foreach(var v in resp.Headers) {
+                                response.AddHeader(v.Key, string.Join(";", v.Value));
+                            }
+                            foreach(var v in resp.Content.Headers) {
+                                response.AddHeader(v.Key, string.Join(";", v.Value));
+                            }
+                            await resp.Content.CopyToAsync(response.OutputStream).ConfigureAwait(false);
+                        } else if(resp.StatusCode is HttpStatusCode.Redirect) {
+                            response.Redirect(resp.Headers.Location.AbsoluteUri);
+                        } else {
+                            Invoke(() => {
+                                _isHcaptcha = true;
+                                webView.CoreWebView2.Navigate(_bahaHost);
+                                ShowActivate();
+                            });
+                            response.StatusCode = (int)resp.StatusCode;
+                            response.Close(Array.Empty<byte>(), true);
+                        }
+                    } else {
+                        response.StatusCode = 400;
+                        response.Close(Array.Empty<byte>(), true);
+                    }
+                } catch(Exception) {
+
+                }
+            }
         }
 
         private void WebView_NavigationStarting(object sender, CoreWebView2NavigationStartingEventArgs e) {
@@ -242,6 +267,14 @@ namespace BahaHcaptcha {
             _canExitApp = true;
             Process.Start(Application.ExecutablePath, "--restart");
             Application.Exit();
+        }
+
+        private void HcaptchaForm_SizeChanged(object sender, EventArgs e) {
+            var workHeight = Screen.PrimaryScreen.WorkingArea.Height;
+            if(workHeight < Height) {
+                Top = 0;
+                Height = workHeight;
+            }
         }
     }
 }

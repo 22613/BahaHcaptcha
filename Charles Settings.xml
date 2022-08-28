@@ -16,36 +16,25 @@
       <locationPatterns>
         <locationMatch>
           <location>
-            <host>*.bilibili.com</host>
-            <port>443</port>
+            <host>*.tucao.*</host>
           </location>
           <enabled>true</enabled>
         </locationMatch>
         <locationMatch>
           <location>
             <host>*.gamer.com.tw</host>
-            <port>443</port>
           </location>
           <enabled>true</enabled>
         </locationMatch>
         <locationMatch>
           <location>
             <host>*.chinacloudsites.cn</host>
-            <port>443</port>
-          </location>
-          <enabled>true</enabled>
-        </locationMatch>
-        <locationMatch>
-          <location>
-            <host>*.tucao.*</host>
-            <port>443</port>
           </location>
           <enabled>true</enabled>
         </locationMatch>
         <locationMatch>
           <location>
             <host>*.dandanplay.net</host>
-            <port>443</port>
           </location>
           <enabled>true</enabled>
         </locationMatch>
@@ -84,6 +73,20 @@
               <sourceLocation>
                 <protocol>https</protocol>
                 <host>ani.gamer.com.tw</host>
+              </sourceLocation>
+              <destLocation>
+                <protocol>http</protocol>
+                <host>localhost</host>
+                <port>5100</port>
+              </destLocation>
+              <preserveHostHeader>false</preserveHostHeader>
+              <enabled>true</enabled>
+            </mapMapping>
+            <mapMapping>
+              <sourceLocation>
+                <protocol>https</protocol>
+                <host>cas.dandanplay.net</host>
+                <path>/api/bilibili/search</path>
               </sourceLocation>
               <destLocation>
                 <protocol>http</protocol>

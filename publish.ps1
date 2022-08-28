@@ -1,13 +1,14 @@
-Set-Location $PSScriptRoot\src
-[xml]$csproj = Get-Content BahaHcaptcha.csproj
+Set-Location $PSScriptRoot
+[xml]$csproj = Get-Content .\src\BahaHcaptcha.csproj
 $version=$csproj.Project.PropertyGroup.Version
 
-dotnet publish -c release -f net472 -o bin\publish\net472
-dotnet publish -c release -f net6.0-windows -o bin\publish\net6.0-windows
+dotnet publish src -c release -f net472 -o publish\net472
+dotnet publish src -c release -f net6.0-windows -o publish\net6.0-windows
+dotnet publish src -c release -f net6.0-windows -o publish\net6.0-windows-x64 -r win-x64 --self-contained=false -p:PublishSingleFile=true
 
-Set-Location bin\publish
-Compress-Archive net472\* -DestinationPath "BahaHcaptcha_v$($version)_net472.zip" -f
-Compress-Archive net6.0-windows\* -DestinationPath "BahaHcaptcha_v$($version)_net6.0.zip" -f
+Compress-Archive publish\net472\* -DestinationPath "publish\BahaHcaptcha_v$($version)_net472.zip" -f
+Compress-Archive publish\net6.0-windows\* -DestinationPath "publish\BahaHcaptcha_v$($version)_net6.0.zip" -f
+Compress-Archive publish\net6.0-windows-x64\* -DestinationPath "publish\BahaHcaptcha_v$($version)_net6.0_x64.zip" -f
 
 explorer.exe /select,"BahaHcaptcha_v$($version)_net472.zip"
 Set-Location $PSScriptRoot
