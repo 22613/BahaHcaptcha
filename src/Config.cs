@@ -1,7 +1,8 @@
 ﻿using System.Collections.Generic;
 
 namespace BahaHcaptcha;
-public class Config {
+public class Config
+{
     public const string ConfigPath = "appsettings.yaml";
 
     public string ExternalProxy { get; set; }

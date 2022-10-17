@@ -7,13 +7,15 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace BahaHcaptcha;
 
-public partial class ConfigForm: Form {
+public partial class ConfigForm: Form
+{
     private bool _canExitApp;
 
     private readonly IServiceProvider _provider;
     private readonly Config _config;
 
-    public ConfigForm(IServiceProvider provider, Config config) {
+    public ConfigForm(IServiceProvider provider, Config config)
+    {
         InitializeComponent();
 
         _config = config;
@@ -29,7 +31,8 @@ public partial class ConfigForm: Form {
             bilibiliSearchReplaceBar.Lines = _config.BilibiliSearchReplaces.ToArray();
     }
 
-    private void Form_FormClosing(object sender, FormClosingEventArgs e) {
+    private void Form_FormClosing(object sender, FormClosingEventArgs e)
+    {
         if(_canExitApp) return;
 
         var proxy = proxyBar.Text ?? string.Empty;
@@ -43,10 +46,13 @@ public partial class ConfigForm: Form {
             || _config.ClearCookie != clear
             || !(_config.BahaSearchReplaces ?? Array.Empty<string>()).SequenceEqual(bahaSearchReplaces)
             || !(_config.BilibiliSearchReplaces ?? Array.Empty<string>()).SequenceEqual(bilibiliSearchReplaces)
-        ) {
-            using(var sw = new StreamWriter(Config.ConfigPath)) {
+        )
+        {
+            using(var sw = new StreamWriter(Config.ConfigPath))
+            {
                 var serializer = new YamlDotNet.Serialization.Serializer();
-                serializer.Serialize(sw, new Config {
+                serializer.Serialize(sw, new Config
+                {
                     ListenPort = port,
                     ClearCookie = clear,
                     ExternalProxy = proxy,
@@ -55,7 +61,8 @@ public partial class ConfigForm: Form {
                 });
             }
 
-            if(MessageBox.Show(this, "修改设置后需要重启程序才能生效!!\n\t要立即重启程序吗?", "提示", MessageBoxButtons.OKCancel) == DialogResult.OK) {
+            if(MessageBox.Show(this, "修改设置后需要重启程序才能生效!!\n\t要立即重启程序吗?", "提示", MessageBoxButtons.OKCancel) == DialogResult.OK)
+            {
                 _canExitApp = true;
                 var hcaptcha = _provider.GetService<HcaptchaForm>();
                 hcaptcha.BeginInvoke(hcaptcha.Restart);
