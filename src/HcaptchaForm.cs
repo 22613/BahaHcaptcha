@@ -22,7 +22,7 @@ namespace BahaHcaptcha
 
         private const string _dandanCasHost = "https://cas.dandanplay.net";
         private const string _biliSearchUrl = "/api/bilibili/search?keyword=";
-
+        private const string _cookieName = "__cf_bm";
         private string _cookie;
         private string _useragent;
         private bool _canExitApp;
@@ -135,9 +135,31 @@ namespace BahaHcaptcha
                         if(resp.IsSuccessStatusCode)
                         {
                             response.StatusCode = (int)resp.StatusCode;
-                            foreach(var v in resp.Headers)
+                            foreach(var header in resp.Headers)
                             {
-                                response.AddHeader(v.Key, string.Join(";", v.Value));
+                                response.AddHeader(header.Key, string.Join(";", header.Value));
+                                if(header.Key.Equals("Set-Cookie", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    foreach(var values in header.Value)
+                                    {
+                                        foreach(var value in values.Split(';'))
+                                        {
+                                            var separator = value.IndexOf('=');
+                                            if(separator > 0)
+                                            {
+                                                if(value.Remove(separator).Trim() == _cookieName)
+                                                {
+                                                    _cookie = value.Trim();
+                                                    Invoke(() =>
+                                                    {
+                                                        CoreWebView2Cookie cookie = webView.CoreWebView2.CookieManager.CreateCookie(_cookieName, value.Substring(separator + 1).Trim(), ".gamer.com.tw", "/");
+                                                        webView.CoreWebView2.CookieManager.AddOrUpdateCookie(cookie);
+                                                    });
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
                             }
                             foreach(var v in resp.Content.Headers)
                             {
@@ -210,7 +232,7 @@ namespace BahaHcaptcha
             var cookies = await webView.CoreWebView2.CookieManager.GetCookiesAsync(_bahaHost).ConfigureAwait(true);
             foreach(var cookie in cookies)
             {
-                if(cookie.Name == "cf_clearance")
+                if(cookie.Name == _cookieName)
                 {
                     var match = Regex.Match(cookie.Value, @"-(\d{10})-\d-");
                     if(match.Success)
@@ -236,13 +258,13 @@ namespace BahaHcaptcha
 
         private void CoreWebView2_WebResourceResponseReceived(object sender, CoreWebView2WebResourceResponseReceivedEventArgs e)
         {
-            if(GetValue(e.Request.Headers, "cookie", "cf_clearance") is { Length: > 0 } cookie)
+            if(GetValue(e.Request.Headers, "cookie", _cookieName) is { Length: > 0 } cookie)
             {
                 _cookie = cookie;
                 Debug.WriteLine($"cookie: {_cookie}");
             }
 
-            if(GetValue(e.Response.Headers, "set-cookie", "cf_clearance") is { Length: > 0 } setcookie)
+            if(GetValue(e.Response.Headers, "set-cookie", _cookieName) is { Length: > 0 } setcookie)
             {
                 _cookie = setcookie;
                 Debug.WriteLine($"set-cookie: {_cookie}");
