@@ -1,4 +1,4 @@
-using System;
+Ôªøusing System;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -37,7 +37,7 @@ static class Program
         else if(!createdNew)
         {
             mutex.Dispose();
-            MessageBox.Show("≥Ã–Ú“—æ≠∆Ù∂Ø¡À");
+            MessageBox.Show("Á®ãÂ∫èÂ∑≤ÁªèÂêØÂä®‰∫Ü");
             return;
         }
 
@@ -83,7 +83,8 @@ static class Program
             }).Build();
         host.StartAsync().Wait();
 
-        Application.Run(host.Services.GetRequiredService<HcaptchaForm>());
+        var mainForm = host.Services.GetRequiredService<HcaptchaForm>();
+        Application.Run(mainForm);
         host.StopAsync().Wait();
         mutex.ReleaseMutex();
     }

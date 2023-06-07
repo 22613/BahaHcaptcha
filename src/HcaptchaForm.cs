@@ -1,10 +1,11 @@
-using System;
+锘縰sing System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -304,19 +305,29 @@ namespace BahaHcaptcha
         {
             Hide();
             _isHcaptcha = false;
-            notifyIcon.ShowBalloonTip(2000, "提示", "程序已隐藏到托盘", ToolTipIcon.Info);
+            notifyIcon.ShowBalloonTip(2000, "鎻愮ず", "绋嬪簭宸查殣钘忓埌鎵樼洏", ToolTipIcon.Info);
         }
 
         private void ShowMenuItem_Click(object sender, EventArgs e)
         {
             ShowActivate();
         }
+        [DllImport("User32", SetLastError = true)] static extern bool SwitchToThisWindow(IntPtr hWnd, bool fAltTab);
 
         private void ShowActivate()
         {
+            if(!Visible)
+            {
+                Visible = true;
+            }
+            else
+            {
+                SwitchToThisWindow(Handle, false);
+            }
             Show();
-            Activate();
-            BringToFront();
+            //Task.Delay(500).Wait();
+            //Activate();
+            //BringToFront();
         }
 
         private void ConfigMenuItem_Click(object sender, EventArgs e)
