@@ -5,7 +5,7 @@
     <LangVersion>preview</LangVersion>
     <PlatformTarget>AnyCPU</PlatformTarget>
     <UseWindowsForms>true</UseWindowsForms>
-    <TargetFrameworks>net472;net6.0-windows;net7.0-windows;net8.0-windows</TargetFrameworks>
+    <TargetFrameworks>net472;net8.0-windows</TargetFrameworks>
     <ApplicationIcon>favicon.ico</ApplicationIcon>
     <Version>1.0.3</Version>
   </PropertyGroup>
